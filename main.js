@@ -1,177 +1,160 @@
 import * as THREE from 'three';
 
-// Initialize the parametric visualization
-class ParametricVisualization {
+// Parametric Background Animation
+class ParametricBackground {
     constructor() {
         this.container = document.getElementById('parametric-canvas');
+        if (!this.container) return;
+
         this.scene = new THREE.Scene();
+        // Fog for depth
+        this.scene.fog = new THREE.FogExp2(0x050510, 0.002);
+
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        this.camera.position.z = 30;
-        
-        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        this.camera.position.z = 50;
+        this.camera.position.y = 10;
+
+        this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setClearColor(0x0f1121, 1);
+        this.renderer.setPixelRatio(window.devicePixelRatio);
         this.container.appendChild(this.renderer.domElement);
-        
-        this.points = [];
-        this.geometry = null;
-        this.particles = null;
-        
-        this.init();
+
+        this.clock = new THREE.Clock();
+        this.mouse = new THREE.Vector2();
+        this.targetMouse = new THREE.Vector2();
+
+        this.initParticles();
+        this.addEventListeners();
         this.animate();
-        
-        // Event listeners
-        window.addEventListener('resize', this.onWindowResize.bind(this));
     }
-    
-    init() {
-        // Create 3D parametric grid
-        const particleCount = 5000;
-        const particleGeometry = new THREE.BufferGeometry();
-        const particlesData = [];
-        
+
+    initParticles() {
+        const particleCount = 2000; // Optimized count
+        const geometry = new THREE.BufferGeometry();
         const positions = new Float32Array(particleCount * 3);
-        const colors = new Float32Array(particleCount * 3);
+        const sizes = new Float32Array(particleCount);
         
-        const color = new THREE.Color();
+        // Create a wavy grid structure
+        let i = 0;
+        const range = 100;
         
-        for (let i = 0; i < particleCount; i++) {
-            // Position particles in a parametric form
-            const x = (Math.random() - 0.5) * 50;
-            const y = (Math.random() - 0.5) * 50;
-            const z = (Math.random() - 0.5) * 50;
-            
-            // Distribute particles in a spherical shape
-            const r = 15 + Math.random() * 10;
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.random() * Math.PI;
-            
-            positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-            positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-            positions[i * 3 + 2] = r * Math.cos(phi);
-            
-            // Set color gradient (blue to purple to pink)
-            const ratio = i / particleCount;
-            if (ratio < 0.33) {
-                color.setStyle('#3a86ff'); // Blue
-            } else if (ratio < 0.66) {
-                color.setStyle('#8338ec'); // Purple
-            } else {
-                color.setStyle('#ff006e'); // Pink
+        for(let x = 0; x < 50; x++) {
+            for(let z = 0; z < 40; z++) {
+                // Normalized coordinates
+                const u = x / 50;
+                const v = z / 40;
+                
+                // Position
+                const px = (u - 0.5) * range;
+                const pz = (v - 0.5) * range;
+                const py = Math.sin(u * Math.PI * 4) * 5 + Math.cos(v * Math.PI * 4) * 5;
+
+                positions[i * 3] = px;
+                positions[i * 3 + 1] = py;
+                positions[i * 3 + 2] = pz;
+                
+                sizes[i] = Math.random() * 2;
+                i++;
             }
-            
-            colors[i * 3] = color.r;
-            colors[i * 3 + 1] = color.g;
-            colors[i * 3 + 2] = color.b;
-            
-            // Store data for animation
-            particlesData.push({
-                velocity: new THREE.Vector3(
-                    (Math.random() - 0.5) * 0.01,
-                    (Math.random() - 0.5) * 0.01,
-                    (Math.random() - 0.5) * 0.01
-                ),
-                startPosition: new THREE.Vector3(
-                    positions[i * 3],
-                    positions[i * 3 + 1],
-                    positions[i * 3 + 2]
-                )
-            });
         }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
         
-        particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-        
-        const particleMaterial = new THREE.PointsMaterial({
-            size: 0.1,
-            vertexColors: true,
+        // Custom Shader Material for glowing particles
+        // Simplified to PointsMaterial for stability with basic CDN
+        this.material = new THREE.PointsMaterial({
+            color: 0x00f2ff,
+            size: 0.4,
             transparent: true,
-            opacity: 0.8
+            opacity: 0.8,
+            vertexColors: false,
+            sizeAttenuation: true,
+            blending: THREE.AdditiveBlending
         });
-        
-        this.particles = new THREE.Points(particleGeometry, particleMaterial);
+
+        this.particles = new THREE.Points(geometry, this.material);
         this.scene.add(this.particles);
         
-        this.points = positions;
-        this.particlesData = particlesData;
+        // Save initial positions for animation reference
+        this.originalPositions = positions.slice();
     }
-    
-    animate() {
-        requestAnimationFrame(this.animate.bind(this));
-        
-        // Update particle positions for animation
-        const positions = this.particles.geometry.attributes.position.array;
-        
-        for (let i = 0; i < this.particlesData.length; i++) {
-            const particleData = this.particlesData[i];
-            const idx = i * 3;
-            
-            // Calculate wave motion
-            const time = Date.now() * 0.001;
-            const offset = Math.sin(time + i * 0.1) * 0.2;
-            
-            // Update position with wave effect
-            positions[idx] = particleData.startPosition.x + offset;
-            positions[idx + 1] = particleData.startPosition.y + offset * 0.5;
-            positions[idx + 2] = particleData.startPosition.z + offset * 0.3;
-        }
-        
-        this.particles.geometry.attributes.position.needsUpdate = true;
-        
-        // Rotate the entire particle system
-        this.particles.rotation.y += 0.002;
-        this.particles.rotation.x += 0.001;
-        
-        this.renderer.render(this.scene, this.camera);
+
+    addEventListeners() {
+        window.addEventListener('resize', this.onWindowResize.bind(this));
+        document.addEventListener('mousemove', this.onMouseMove.bind(this));
     }
-    
+
+    onMouseMove(event) {
+        this.targetMouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        this.targetMouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    }
+
     onWindowResize() {
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
+
+    animate() {
+        requestAnimationFrame(this.animate.bind(this));
+
+        const time = this.clock.getElapsedTime();
+        
+        // Smooth mouse movement
+        this.mouse.x += (this.targetMouse.x - this.mouse.x) * 0.05;
+        this.mouse.y += (this.targetMouse.y - this.mouse.y) * 0.05;
+
+        // Animate Camera slightly
+        this.camera.position.x += (this.mouse.x * 10 - this.camera.position.x) * 0.02;
+        this.camera.position.y += (-this.mouse.y * 5 + 10 - this.camera.position.y) * 0.02;
+        this.camera.lookAt(0, 0, 0);
+
+        // Animate Particles
+        const positions = this.particles.geometry.attributes.position.array;
+        
+        for(let i = 0; i < positions.length; i += 3) {
+            // Wave movement based on original positions
+            const ox = this.originalPositions[i];
+            const oy = this.originalPositions[i+1];
+            const oz = this.originalPositions[i+2];
+
+            // Complex wave function
+            const waveY = Math.sin(ox * 0.1 + time) * 2 + 
+                          Math.cos(oz * 0.1 + time * 0.5) * 2;
+
+            positions[i+1] = oy + waveY;
+        }
+        
+        this.particles.geometry.attributes.position.needsUpdate = true;
+        
+        // Global rotation
+        this.particles.rotation.y = time * 0.05;
+
+        this.renderer.render(this.scene, this.camera);
+    }
 }
 
-// Initialize the visualization when the DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    // Start the parametric visualization
-    const visualization = new ParametricVisualization();
-    
-    // Set up scroll behavior for CTA button
-    const ctaButton = document.getElementById('cta-button');
-    ctaButton.addEventListener('click', () => {
-        const servicesSection = document.getElementById('services');
-        servicesSection.scrollIntoView({ behavior: 'smooth' });
+// Initialize
+new ParametricBackground();
+
+// Scroll Animations (Simple version)
+const observerOptions = {
+    threshold: 0.1
+};
+
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
+        }
     });
-    
-    // Add scroll animations
-    const sections = document.querySelectorAll('section:not(#hero)');
-    
-    // Simple scroll reveal animation
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.opacity = 1;
-                entry.target.style.transform = 'translateY(0)';
-            }
-        });
-    }, { threshold: 0.1 });
-    
-    sections.forEach(section => {
-        section.style.opacity = 0;
-        section.style.transform = 'translateY(20px)';
-        section.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        observer.observe(section);
-    });
-    
-    // Form submission handling
-    const contactForm = document.getElementById('contact-form');
-    if (contactForm) {
-        contactForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            // Here you would normally handle the form submission with AJAX
-            alert('Thank you for your message! This is a demo, so no message was actually sent.');
-            contactForm.reset();
-        });
-    }
+}, observerOptions);
+
+document.querySelectorAll('.service-card, .work-item, .team-member, .contact-wrapper').forEach((el) => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(30px)';
+    el.style.transition = 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+    observer.observe(el);
 });
