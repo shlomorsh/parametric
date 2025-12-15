@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>טכנולוגיה - שלומי רשף</title>
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Import Maps & Libraries -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/@studio-freight/lenis@1.0.33/dist/lenis.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.1/vanilla-tilt.min.js"></script>
+</head>
+
+<body>
+    <div id="cursor" class="custom-cursor"></div>
+    <div class="noise-overlay"></div>
+    <div id="parametric-canvas"></div>
+
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">
+                    <a href="index.html">
+                        <img src="images/logo.png" alt="SR Logo" data-tilt data-tilt-scale="1.1">
+                    </a>
+                </div>
+                <div class="nav-links">
+                    <a href="index.html" class="magnetic-btn">בית</a>
+                    <a href="projects.html" class="magnetic-btn">פרויקטים</a>
+                    <a href="technology.html" class="magnetic-btn active">טכנולוגיה</a>
+                    <a href="index.html#contact" class="magnetic-btn">צור קשר</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero" style="height: 60vh;">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="reveal-text">תהליך העבודה</h1>
+                <p class="reveal-text delay-1">מהרעיון ועד למימוש: הטכנולוגיות המניעות את היצירה שלנו.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="stack">
+        <div class="container">
+            <div class="services-grid">
+                <div class="service-card glass-panel" data-tilt>
+                    <h3>Rhino + Grasshopper</h3>
+                    <p>פלטפורמת הליבה שלנו לתכנון פרמטרי. אנו מפתחים סקריפטים מורכבים המאפשרים שליטה מלאה בכל פרמטר
+                        בפרויקט.</p>
+                </div>
+                <div class="service-card glass-panel" data-tilt>
+                    <h3>Python & C#</h3>
+                    <p>פיתוח רכיבים מותאמים אישית על מנת להרחיב את היכולות של כלי המדף ולפתור בעיות ספציפיות ומורכבות.
+                    </p>
+                </div>
+                <div class="service-card glass-panel" data-tilt>
+                    <h3>למידת מכונה (Machine Learning)</h3>
+                    <p>שימוש במודלים של בינה מלאכותית לניתוח אופטימיזציה ולחיזוי ביצועי מבנה תחת תנאי קיצון.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="code-snippet" style="padding: 4rem 0;">
+        <div class="container">
+            <div class="glass-panel" style="padding: 2rem; font-family: monospace; color: var(--primary);">
+                <h3 dir="ltr">// Example: Algorithm Logic</h3>
+                <p style="color: #fff;">
+                    def optimize_facade(panels, sun_vector):<br>
+                    &nbsp;&nbsp;for panel in panels:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;angle = Vector3.Angle(panel.normal, sun_vector)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;panel.aperture = remap(angle, 0, 90, 0.1, 1.0)<br>
+                    &nbsp;&nbsp;return panels
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <script type="module" src="main.js"></script>
+</body>
+
+</html>
